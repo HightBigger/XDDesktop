@@ -29,10 +29,6 @@ int const DOCKSECTION = 10000;
 //dock
 @property (nonatomic, strong) XDDockView *xdDockView;
 
-@property (nonatomic, assign) NSInteger numOfDock;
-
-@property (nonatomic, strong) NSMutableArray *dockCellArray;
-
 #pragma mark - 拖拽相关
 @property (nonatomic, weak) XDDesktopCell *activeCell;
 @property (nonatomic, weak) UIView *activeView;
@@ -147,7 +143,8 @@ int const DOCKSECTION = 10000;
 #pragma mark - cell代理
 - (void)clickGestureForCell:(XDDesktopCell *)cell indexPath:(NSIndexPath *)indexPath
 {
-    if ([self.delegate respondsToSelector:@selector(desktopView:didSelectItemAtIndexPath:)]) {
+    if ([self.delegate respondsToSelector:@selector(desktopView:didSelectItemAtIndexPath:)])
+    {
         [self.delegate desktopView:self didSelectItemAtIndexPath:indexPath];
     }
 }
@@ -173,7 +170,6 @@ int const DOCKSECTION = 10000;
         }
     }
 }
-
 
 #pragma mark - action
 - (void)handleGestureBeganWithCell:(XDDesktopCell *)cell gesture:(UILongPressGestureRecognizer *)recognizer
@@ -226,92 +222,26 @@ int const DOCKSECTION = 10000;
     if (self.sourceView == self.activeView)
     {
         [self moveInSameView];
-    }else
+    }
+    else
     {
         if (self.activeView == self.xdDockView)
         {
-            //deskView 拖拽到dockView
-            NSInteger num = [self.xdDockView numberOfItemsInDock];
-            
-            if (num == self.dockMax) return;
-            
-            NSIndexPath *insertPath;
-
-            CGFloat snapCenterX = CGRectGetMidX(self.snapViewForActiveCell.frame);
-            
-            NSIndexPath *firstPath = [NSIndexPath indexPathForRow:0 inSection:DOCKSECTION];
-            //判断是否为第一个
-            XDDesktopCell *cell = [self.xdDockView cellForItemAtIndexPath:firstPath];
-            
-            if (!cell) {
-                insertPath = firstPath;
-            }else
-            {
-                CGRect realFrame = [self.xdDockView convertRect:cell.frame toView:self];
-                if (snapCenterX <= CGRectGetMidX(realFrame)) {
-                    insertPath = firstPath;
-                }
-            }
-
-            if (!insertPath) {
-                //判断是否为最后一个,到这里num已经大于0了
-                NSIndexPath *lastPath = [NSIndexPath indexPathForRow:num-1 inSection:DOCKSECTION];
-                
-                cell = [self.xdDockView cellForItemAtIndexPath:lastPath];
-                CGRect realFrame = [self.xdDockView convertRect:cell.frame toView:self];
-                
-                if (snapCenterX > CGRectGetMidX(realFrame)) {
-                    insertPath = [NSIndexPath indexPathForRow:num inSection:DOCKSECTION];
-                }
-            }
-            
-            if (!insertPath) {
-                //既不是第一个也不是最后一个，这里num已经大于1
-                for (int i = 0; i < num ; i++)
-                {
-                    NSIndexPath *forwardPath = [NSIndexPath indexPathForRow:i inSection:DOCKSECTION];
-                    NSIndexPath *nextPath = [NSIndexPath indexPathForRow:i+1 inSection:DOCKSECTION];
-                    
-                    XDDesktopCell *forwardCell = [self.xdDockView cellForItemAtIndexPath:forwardPath];
-                    XDDesktopCell *nextCell = [self.xdDockView cellForItemAtIndexPath:nextPath];
-                    
-                    if (forwardCell && nextCell) {
-                        
-                        CGRect forwarFrame = [self.xdDockView convertRect:forwardCell.frame toView:self];
-                        CGRect nextFrame = [self.xdDockView convertRect:nextCell.frame toView:self];
-                        
-                        //大于左边的，小于等于右边的
-                        if (snapCenterX > CGRectGetMidX(forwarFrame) && snapCenterX <= CGRectGetMidX(nextFrame)) {
-                            insertPath = nextPath;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            if (insertPath) {
-                [self.xdDockView insertItem:self.activeCell atIndexPath:insertPath];
-                self.activeXDPath = insertPath;
-                
-                self.sourceView = self.xdDockView;
-            }
+            [self dragToDockView];
         }
         else if (self.activeView == self.xdDeskView)
         {
-            //dockView 拖拽到deskView
-            
-            
+            [self dragToDeskView];
         }
-            
     }
-    
-
 }
 
 - (void)handleEditingMoveWhenGestureEnded:(UILongPressGestureRecognizer *)recognizer
 {
-    if ([self.delegate respondsToSelector:@selector(desktopView:moveItemAtIndexPath:toIndexPath:)]) {
-        [self.delegate desktopView:self moveItemAtIndexPath:self.sourceXDPath toIndexPath:self.activeXDPath];
+    if ([self.sourceXDPath isEqual:self.activeXDPath]) {
+        if ([self.delegate respondsToSelector:@selector(desktopView:moveItemAtIndexPath:toIndexPath:)]) {
+            [self.delegate desktopView:self moveItemAtIndexPath:self.sourceXDPath toIndexPath:self.activeXDPath];
+        }
     }
     
     [UIView animateWithDuration:0.25f animations:^{
@@ -330,56 +260,112 @@ int const DOCKSECTION = 10000;
 }
 
 #pragma mark - method
-- (void)handleExchangeOperation
+- (void)dragToDockView
 {
-    if (self.sourceView == self.activeView)
+    //deskView 拖拽到dockView
+    NSInteger num = [self.xdDockView numberOfItemsInDock];
+    
+    if (num == self.dockMax) return;
+    
+    NSIndexPath *insertPath;
+    
+    CGFloat snapCenterX = CGRectGetMidX(self.snapViewForActiveCell.frame);
+    
+    NSIndexPath *firstPath = [NSIndexPath indexPathForRow:0 inSection:DOCKSECTION];
+    //判断是否为第一个
+    XDDesktopCell *cell = [self.xdDockView cellForItemAtIndexPath:firstPath];
+    
+    if (!cell) {
+        insertPath = firstPath;
+    }else
     {
-        [self moveInSameView];
+        CGRect realFrame = [self.xdDockView convertRect:cell.frame toView:self];
+        if (snapCenterX <= CGRectGetMidX(realFrame)) {
+            insertPath = firstPath;
+        }
     }
-//    else
-//    {
-//        if (self.activeView == self.xdDockView) {
-//            //deskView 拖拽到dockView
-//
-//
-//
-//
-//
-//        }
-//        else if (self.activeView == self.deskView)
-//        {
-//            //dockView 拖拽到deskView
-//            if (self.activeXDPath.section == DOCKSECTION) {
-//                //当前活跃的是dockview的cell，表示第一次移出dockview
-//
-//                //dockView的操作
-//                [self moveDockviewCellChange:YES];
-//
-//                //deskView的操作
-//                NSInteger currentPage = [self getCurrentPage];
-//                NSInteger numOfPage = [self.delegate desktopView:self numberOfItemsInPage:currentPage];
-//
-//                if (numOfPage < self.columns * self.rows) {
-//                    //找出当前页的第一个空cell
-//                    NSIndexPath *lastPath = [NSIndexPath indexPathForRow:(currentPage*self.columns*self.rows + numOfPage) inSection:0];
-//
-//                    XDDesktopCollectionViewCell *lastCell = (XDDesktopCollectionViewCell *)[self.deskView cellForItemAtIndexPath:lastPath];
-//
-//                    lastCell.xdContentView = self.activeCell.xdContentView;
-//
-//                    self.activeCell = lastCell;
-//
-//                    lastCell.hidden = YES;
-//
-//                    self.activeXDPath = [self indexPathToXdPath:lastPath isDock:NO];
-//                }
-//            }
-//            else
-//            {
-//                [self moveDeskviewCell];
-//            }
-//        }
-//    }
+    
+    if (!insertPath) {
+        //判断是否为最后一个,到这里num已经大于0了
+        NSIndexPath *lastPath = [NSIndexPath indexPathForRow:num-1 inSection:DOCKSECTION];
+        
+        cell = [self.xdDockView cellForItemAtIndexPath:lastPath];
+        CGRect realFrame = [self.xdDockView convertRect:cell.frame toView:self];
+        
+        if (snapCenterX > CGRectGetMidX(realFrame)) {
+            insertPath = [NSIndexPath indexPathForRow:num inSection:DOCKSECTION];
+        }
+    }
+    
+    if (!insertPath) {
+        //既不是第一个也不是最后一个，这里num已经大于1
+        for (int i = 0; i < num ; i++)
+        {
+            NSIndexPath *forwardPath = [NSIndexPath indexPathForRow:i inSection:DOCKSECTION];
+            NSIndexPath *nextPath = [NSIndexPath indexPathForRow:i+1 inSection:DOCKSECTION];
+            
+            XDDesktopCell *forwardCell = [self.xdDockView cellForItemAtIndexPath:forwardPath];
+            XDDesktopCell *nextCell = [self.xdDockView cellForItemAtIndexPath:nextPath];
+            
+            if (forwardCell && nextCell) {
+                
+                CGRect forwarFrame = [self.xdDockView convertRect:forwardCell.frame toView:self];
+                CGRect nextFrame = [self.xdDockView convertRect:nextCell.frame toView:self];
+                
+                //大于左边的，小于等于右边的
+                if (snapCenterX > CGRectGetMidX(forwarFrame) && snapCenterX <= CGRectGetMidX(nextFrame)) {
+                    insertPath = nextPath;
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (insertPath) {
+        [self.xdDockView insertItem:self.activeCell atIndexPath:insertPath];
+        self.activeXDPath = insertPath;
+        
+        self.sourceView = self.xdDockView;
+    }
+}
+
+
+- (void)dragToDeskView
+{
+    //dockView 拖拽到deskView
+    NSIndexPath *insertPath;
+    
+    for (XDDesktopCell *cell in self.xdDeskView.subviews)
+    {
+        CGRect realFrame = [self.activeView convertRect:cell.frame toView:self];
+        if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
+        {
+            insertPath = cell.indexPath;
+        }
+    }
+    
+    NSInteger section = [self getCurrentPage];
+    
+    NSInteger num = [self.xdDeskView numberOfItemsInSection:section];
+    
+    if (!insertPath && num >= self.columns * self.rows)
+    {
+        self.activeView = self.xdDockView;
+    }
+    else
+    {
+        [self.xdDockView removeItem:self.activeCell];
+        
+        if (!insertPath) {
+            insertPath = [NSIndexPath indexPathForRow:num inSection:section];
+        }
+        
+        [self.xdDeskView insertItem:self.activeCell atIndexPath:insertPath];
+        
+        self.activeXDPath = insertPath;
+        
+        self.sourceView = self.xdDeskView;
+    }
 }
 
 - (void)moveInSameView
@@ -409,43 +395,12 @@ int const DOCKSECTION = 10000;
             if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
             {
                 [self handleCellExchangeWithSourceIndexPath:self.activeXDPath destinationIndexPath:currentIndexPath];
-                
                 self.activeXDPath = currentIndexPath;
+                break;
             }
         }
     }
 }
-
-- (void)moveDockviewCellChange:(BOOL)change
-{
-//    if (change) {
-//        NSMutableArray *bCells = [NSMutableArray arrayWithCapacity:0];
-//        for (int i = 0; i < self.xdDockView.visibleCells.count;i++) {
-//
-//            if (i != self.sourceXDPath.row) {
-//
-//                XDDesktopCollectionViewCell *cell = (XDDesktopCollectionViewCell*)[self.dockView cellForItemAtIndexPath:[NSIndexPath indexPathForRow:i inSection:0]];
-//
-//                [bCells addObject:cell];
-//            }
-//        }
-//
-//        XDHorizontalPageFlowlayout *layout = (XDHorizontalPageFlowlayout*)self.dockView.collectionViewLayout;
-//
-//        NSArray *frames = [layout getFrameArrayWithCount:self.dockView.visibleCells.count-1];
-//
-//        [UIView animateWithDuration:0.25f animations:^{
-//
-//            for (int i = 0; i < bCells.count; i++) {
-//                XDDesktopCollectionViewCell *cell = bCells[i];
-//                CGRect frame = [frames[i] CGRectValue];
-//                cell.frame = frame;
-//            }
-//
-//        }];
-//    }
-}
-
 
 - (void)handleCellExchangeWithSourceIndexPath:(NSIndexPath *)sourceIndexPath
                          destinationIndexPath:(NSIndexPath *)toIndexPath
@@ -564,14 +519,6 @@ int const DOCKSECTION = 10000;
         _xdDockView.backgroundColor = [UIColor grayColor];
     }
     return _xdDockView;
-}
-
-- (NSMutableArray *)dockCellArray
-{
-    if (!_dockCellArray) {
-        _dockCellArray = [NSMutableArray arrayWithCapacity:0];
-    }
-    return _dockCellArray;
 }
 
 @end

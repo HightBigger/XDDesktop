@@ -116,6 +116,25 @@
     }];
 }
 
+- (void)removeItem:(XDDesktopCell *)cell
+{
+//    [cell removeFromSuperview];
+    
+    for (XDDesktopCell *subCell in self.subviews) {
+        
+        if (subCell == cell)  continue;
+        
+        if (subCell.indexPath.row > cell.indexPath.row) {
+            subCell.indexPath = [NSIndexPath indexPathForRow:subCell.indexPath.row-1 inSection:cell.indexPath.section ];
+        }
+        
+        [UIView animateWithDuration:0.25f animations:^{
+            subCell.frame = [self getFrameWithIndex:subCell.indexPath.row count:self.subviews.count - 1];
+        }];
+    }
+
+}
+
 - (nullable XDDesktopCell *)cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     XDDesktopCell *getCell;

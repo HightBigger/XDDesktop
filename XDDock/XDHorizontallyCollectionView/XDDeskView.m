@@ -96,15 +96,6 @@
     
     if (!sourceCell || !toCell) return;
     
-//    NSInteger pageCount = self.columns* self.rows;
-    
-//    NSInteger oldIndex = indexPath.section * pageCount + indexPath.row;
-//
-//    NSInteger toIndex = toIndexPath.section * pageCount + toIndexPath.row;
-    
-//    NSInteger minIndex = MIN(oldIndex, toIndex);
-//    NSInteger maxIndex = MAX(oldIndex, toIndex);
-    
     CGRect sourceFrame = sourceCell.frame;
     CGRect toFrame = toCell.frame;
     
@@ -115,36 +106,34 @@
         sourceCell.frame = toFrame;
         toCell.frame = sourceFrame;
     }];
+}
+
+- (void)insertItem:(XDDesktopCell *)cell atIndexPath:(NSIndexPath *)indexPath
+{
+    NSIndexPath *removePath = [NSIndexPath indexPathForRow:self.columns* self.rows-1 inSection:indexPath.section];
+    XDDesktopCell *removeCell = [self getCellAtIndexPath:removePath];
     
-//    [UIView animateWithDuration:0.25f animations:^{
-//        
-//        for (XDDesktopCell *cell in self.subviews)
-//        {
-//            NSInteger cellIndex = cell.indexPath.section * pageCount + cell.indexPath.row;
-//            
-//            if (oldIndex < toIndex)
-//            {
-//                if (cellIndex > minIndex && cellIndex <= maxIndex) {
-//                    NSInteger row = (cellIndex - 1)%pageCount;
-//                    NSInteger section = (cellIndex - 1)/pageCount;
-//                    NSIndexPath *newPath = [NSIndexPath indexPathForRow:row inSection:section];
-//                    cell.frame = [self layoutFrameForItemAtIndexPath:newPath];
-//                    cell.indexPath = newPath;
-//                }
-//            }
-//            
-//            if (toIndex < oldIndex)
-//            {
-//                if (cellIndex >= minIndex && cellIndex < maxIndex) {
-//                    NSInteger row = (cellIndex + 1)%pageCount;
-//                    NSInteger section = (cellIndex + 1)/pageCount;
-//                    NSIndexPath *newPath = [NSIndexPath indexPathForRow:row inSection:section];
-//                    cell.frame = [self layoutFrameForItemAtIndexPath:newPath];
-//                    cell.indexPath = newPath;
-//                }
-//            }
-//        }
-//    }];
+    for (XDDesktopCell *subCell in self.subviews)
+    {
+        if (subCell.indexPath.section == indexPath.section && subCell != cell && subCell.indexPath.row >= indexPath.row)
+        {
+            NSIndexPath *newIndexPath = [NSIndexPath indexPathForRow:subCell.indexPath.row + 1 inSection:indexPath.section];
+            subCell.indexPath = newIndexPath;
+            [UIView animateWithDuration:0.25f animations:^{
+                subCell.frame = [self layoutFrameForItemAtIndexPath:newIndexPath];
+            }];
+        }
+    }
+    
+    cell.frame = [self layoutFrameForItemAtIndexPath:indexPath];
+    cell.indexPath = indexPath;
+    [self addSubview:cell];
+    
+    if (removeCell)
+    {
+        [removeCell removeFromSuperview];
+        [self insertItem:removeCell atIndexPath:[NSIndexPath indexPathForRow:0 inSection:indexPath.section+1]];
+    }
 }
 
 - (NSInteger)numberOfItemsInSection:(NSInteger)section

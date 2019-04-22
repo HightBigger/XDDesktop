@@ -67,6 +67,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)moveItemAtIndexPath:(NSIndexPath *)indexPath toIndexPath:(NSIndexPath *)newIndexPath;
 
+- (void)insertItem:(XDDesktopCell *)cell atIndexPath:(NSIndexPath *)indexPath;
+
 - (NSInteger)numberOfItemsInSection:(NSInteger)section;
 
 - (nullable XDDesktopCell *)cellForItemAtIndexPath:(NSIndexPath *)indexPath;

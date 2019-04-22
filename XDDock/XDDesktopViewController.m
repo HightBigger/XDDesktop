@@ -35,7 +35,7 @@
         [self.dockArray addObject:[NSNumber numberWithInt:i]];
     }
     
-    for (int i = 0; i < 17; i++) {
+    for (int i = 0; i < 23; i++) {
         [self.deskArray0 addObject:[NSNumber numberWithInt:i]];
     }
     
@@ -185,7 +185,7 @@
 {
     if (!_xdcollectionView)
     {
-        _xdcollectionView = [XDDesktopView desktopViewWithRows:7 columns:4 registerClass:[XDDesktopDemoCell class] identifier:@"UICollectionViewCell"];
+        _xdcollectionView = [XDDesktopView desktopViewWithRows:6 columns:4 registerClass:[XDDesktopDemoCell class] identifier:@"UICollectionViewCell"];
         _xdcollectionView.backgroundColor = [UIColor brownColor];
         _xdcollectionView.delegate = self;
         _xdcollectionView.translatesAutoresizingMaskIntoConstraints = NO;
