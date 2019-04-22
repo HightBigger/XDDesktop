@@ -31,7 +31,7 @@
     self.deskArray1 = [NSMutableArray arrayWithCapacity:0];
     self.deskArray2 = [NSMutableArray arrayWithCapacity:0];
     
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         [self.dockArray addObject:[NSNumber numberWithInt:i]];
     }
     
@@ -64,6 +64,8 @@
     [super viewDidAppear:animated];
     
     [self.xdcollectionView reloadData];
+    
+    [self.xdcollectionView setPage:0 animate:NO];
 }
 
 - (void)setupView
@@ -75,7 +77,6 @@
     [self.xdcollectionView.leftAnchor constraintEqualToAnchor:self.view.leftAnchor].active = YES;
     [self.xdcollectionView.rightAnchor constraintEqualToAnchor:self.view.rightAnchor].active = YES;
     [self.xdcollectionView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor].active = YES;
-    
 }
 
 #pragma mark - XDCollectionView代理

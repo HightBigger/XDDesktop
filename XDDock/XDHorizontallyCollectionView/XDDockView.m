@@ -116,9 +116,11 @@
     }];
 }
 
-- (void)removeItem:(XDDesktopCell *)cell
+- (void)removeItem:(XDDesktopCell *)cell release:(BOOL)release
 {
-//    [cell removeFromSuperview];
+    if (release) {
+        [cell removeFromSuperview];
+    }
     
     for (XDDesktopCell *subCell in self.subviews) {
         

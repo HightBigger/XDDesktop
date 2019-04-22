@@ -12,7 +12,7 @@
 
 int const DOCKSECTION = 10000;
 
-@interface XDDesktopView()<XDDesktopCellDelegate,XDDockViewDelegate,XDDeskViewDelegate>
+@interface XDDesktopView()<XDDesktopCellDelegate,XDDockViewDelegate,XDDeskViewDelegate,UIScrollViewDelegate>
 
 #pragma mark - 布局
 //desk
@@ -30,6 +30,8 @@ int const DOCKSECTION = 10000;
 @property (nonatomic, strong) XDDockView *xdDockView;
 
 #pragma mark - 拖拽相关
+@property (nonatomic, assign) BOOL editMode;
+
 @property (nonatomic, weak) XDDesktopCell *activeCell;
 @property (nonatomic, weak) UIView *activeView;
 @property (nonatomic, weak) UIView *sourceView;
@@ -67,19 +69,27 @@ int const DOCKSECTION = 10000;
         self.cellClass = cellClass;
         self.identifier = identifier;
         self.dockMax = 4;
+        self.editMode = NO;
         
         [self addSubview:self.xdDeskView];
+        [self addSubview:self.pageControl];
         [self addSubview:self.xdDockView];
         
         [self.xdDeskView.topAnchor constraintEqualToAnchor:self.topAnchor].active = YES;
         [self.xdDeskView.leftAnchor constraintEqualToAnchor:self.leftAnchor].active = YES;
         [self.xdDeskView.rightAnchor constraintEqualToAnchor:self.rightAnchor].active = YES;
-        [self.xdDeskView.bottomAnchor constraintEqualToAnchor:self.xdDockView.topAnchor].active = YES;
-                
+        [self.xdDeskView.bottomAnchor constraintEqualToAnchor:self.pageControl.topAnchor].active = YES;
+        
+        [self.pageControl.topAnchor constraintEqualToAnchor:self.xdDeskView.bottomAnchor].active = YES;
+        [self.pageControl.leftAnchor constraintEqualToAnchor:self.leftAnchor].active = YES;
+        [self.pageControl.rightAnchor constraintEqualToAnchor:self.rightAnchor].active = YES;
+        [self.pageControl.bottomAnchor constraintEqualToAnchor:self.xdDockView.topAnchor].active = YES;
+        [self.pageControl.heightAnchor constraintEqualToConstant:40].active = YES;
+        
         [self.xdDockView.leftAnchor constraintEqualToAnchor:self.leftAnchor].active = YES;
         [self.xdDockView.rightAnchor constraintEqualToAnchor:self.rightAnchor].active = YES;
         [self.xdDockView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor].active = YES;
-        [self.xdDockView.heightAnchor constraintEqualToConstant:110].active = YES;
+        [self.xdDockView.heightAnchor constraintEqualToConstant:120].active = YES;
 
     }
     return self;
@@ -97,7 +107,7 @@ int const DOCKSECTION = 10000;
 }
 
 - (void)editingMode:(BOOL)editing{
-    
+    self.editMode = editing;
 }
 
 - (void)reloadData
@@ -105,6 +115,23 @@ int const DOCKSECTION = 10000;
     [self.xdDeskView reloadData];
     
     [self.xdDockView reloadData];
+}
+
+- (void)setPage:(NSInteger )page animate:(BOOL)animate
+{
+    if (animate) {
+        [UIView animateWithDuration:0.25 animations:^{
+            self.xdDeskView.contentOffset = CGPointMake(self.xdDeskView.bounds.size.width * page, 0);
+        } completion:^(BOOL finished) {
+            [self.pageControl setCurrentPage:page+1];
+        }];
+        
+        return;
+    }
+    
+    self.xdDeskView.contentOffset = CGPointMake(self.xdDeskView.bounds.size.width * page, 0);
+    
+    [self.pageControl setCurrentPage:page+1];
 }
 
 #pragma mark - dockview代理
@@ -125,7 +152,11 @@ int const DOCKSECTION = 10000;
 #pragma mark - deskView代理
 - (NSInteger)numberOfPagesInDeskView:(XDDeskView *)deskView
 {
-    return [self.delegate numberOfPagesInDesktopView:self];
+    NSInteger pages = [self.delegate numberOfPagesInDesktopView:self];
+    
+    self.pageControl.numberOfPages = pages + 1;
+    
+    return pages;
 }
 
 - (NSInteger)deskView:(XDDeskView *)xdDeskView numberOfItemsInPage:(NSInteger)page
@@ -138,6 +169,13 @@ int const DOCKSECTION = 10000;
     XDDesktopCell *cell = [self.delegate desktopView:self cellForItemAtIndexPath:indexPath];
     
     return cell;
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    NSInteger page = [self getCurrentPage];
+    
+    [self.pageControl setCurrentPage:page +1];
 }
 
 #pragma mark - cell代理
@@ -354,7 +392,7 @@ int const DOCKSECTION = 10000;
     }
     else
     {
-        [self.xdDockView removeItem:self.activeCell];
+        [self.xdDockView removeItem:self.activeCell release:NO];
         
         if (!insertPath) {
             insertPath = [NSIndexPath indexPathForRow:num inSection:section];
@@ -502,9 +540,10 @@ int const DOCKSECTION = 10000;
     if (!_xdDeskView) {
         _xdDeskView = [XDDeskView deskViewWithRows:self.rows columns:self.columns];
         _xdDeskView.deskDelegate = self;
-        [_xdDeskView setItemSize:CGSizeMake(80, 85) edgeInsets:UIEdgeInsetsMake(20, 20, 40, 20)];
+        _xdDeskView.delegate = self;
+        [_xdDeskView setItemSize:CGSizeMake(80, 95) edgeInsets:UIEdgeInsetsMake(20, 40, 5, 40)];
         _xdDeskView.translatesAutoresizingMaskIntoConstraints = NO;
-        _xdDeskView.backgroundColor = [UIColor brownColor];
+        _xdDeskView.backgroundColor = [UIColor blueColor];
     }
     return _xdDeskView;
 }
@@ -514,11 +553,23 @@ int const DOCKSECTION = 10000;
     if (!_xdDockView) {
         _xdDockView = [XDDockView dockViewWithMaxcount:self.dockMax];
         _xdDockView.delegate = self;
-        [_xdDockView setItemSize:CGSizeMake(80, 85) edgeInsets:UIEdgeInsetsMake(5, 20, 25, 20)];
+        [_xdDockView setItemSize:CGSizeMake(80, 95) edgeInsets:UIEdgeInsetsMake(5, 40, 25, 40)];
         _xdDockView.translatesAutoresizingMaskIntoConstraints = NO;
         _xdDockView.backgroundColor = [UIColor grayColor];
     }
     return _xdDockView;
 }
+
+- (UIPageControl *)pageControl
+{
+    if (!_pageControl) {
+        _pageControl = [[UIPageControl alloc] initWithFrame:CGRectZero];
+        _pageControl.currentPageIndicatorTintColor = [UIColor whiteColor];
+        _pageControl.pageIndicatorTintColor = [UIColor colorWithWhite:0xCC/255.0f alpha:1];
+        _pageControl.translatesAutoresizingMaskIntoConstraints = NO;
+    }
+    return _pageControl;
+}
+
 
 @end

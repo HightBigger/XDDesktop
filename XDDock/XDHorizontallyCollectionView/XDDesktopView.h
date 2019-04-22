@@ -99,6 +99,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)reloadData;
 
+- (void)setPage:(NSInteger )page animate:(BOOL)animate;
+
 @end
 
 NS_ASSUME_NONNULL_END
