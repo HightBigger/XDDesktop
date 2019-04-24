@@ -12,6 +12,8 @@
 
 int const DOCKSECTION = 10000;
 
+int const CHANGEMARGIN = 30;
+
 @interface XDDesktopView()<XDDesktopCellDelegate,XDDockViewDelegate,XDDeskViewDelegate,UIScrollViewDelegate>
 
 #pragma mark - 布局
@@ -31,6 +33,8 @@ int const DOCKSECTION = 10000;
 
 #pragma mark - 拖拽相关
 @property (nonatomic, assign) BOOL editMode;
+
+@property (nonatomic, assign) BOOL canRoll;
 
 @property (nonatomic, weak) XDDesktopCell *activeCell;
 @property (nonatomic, weak) UIView *activeView;
@@ -78,9 +82,9 @@ int const DOCKSECTION = 10000;
         [self.xdDeskView.topAnchor constraintEqualToAnchor:self.topAnchor].active = YES;
         [self.xdDeskView.leftAnchor constraintEqualToAnchor:self.leftAnchor].active = YES;
         [self.xdDeskView.rightAnchor constraintEqualToAnchor:self.rightAnchor].active = YES;
-        [self.xdDeskView.bottomAnchor constraintEqualToAnchor:self.pageControl.topAnchor].active = YES;
+        [self.xdDeskView.bottomAnchor constraintEqualToAnchor:self.xdDockView.topAnchor].active = YES;
         
-        [self.pageControl.topAnchor constraintEqualToAnchor:self.xdDeskView.bottomAnchor].active = YES;
+//        [self.pageControl.topAnchor constraintEqualToAnchor:self.xdDeskView.bottomAnchor constant:-40].active = YES;
         [self.pageControl.leftAnchor constraintEqualToAnchor:self.leftAnchor].active = YES;
         [self.pageControl.rightAnchor constraintEqualToAnchor:self.rightAnchor].active = YES;
         [self.pageControl.bottomAnchor constraintEqualToAnchor:self.xdDockView.topAnchor].active = YES;
@@ -106,8 +110,13 @@ int const DOCKSECTION = 10000;
     return cell;
 }
 
-- (void)editingMode:(BOOL)editing{
+- (void)editingMode:(BOOL)editing
+{
     self.editMode = editing;
+    
+//    [self.xdDeskView editMode:editing];
+//
+//    self.pageControl.numberOfPages = editing ? self.xdDeskView.pageCount + 2 : self.xdDeskView.pageCount;
 }
 
 - (void)reloadData
@@ -212,6 +221,10 @@ int const DOCKSECTION = 10000;
 #pragma mark - action
 - (void)handleGestureBeganWithCell:(XDDesktopCell *)cell gesture:(UILongPressGestureRecognizer *)recognizer
 {
+    if (!self.editMode) return;
+    
+    self.canRoll = YES;
+    
     self.activeCell = cell;
     
     self.sourceXDPath = cell.indexPath;
@@ -276,6 +289,8 @@ int const DOCKSECTION = 10000;
 
 - (void)handleEditingMoveWhenGestureEnded:(UILongPressGestureRecognizer *)recognizer
 {
+    self.canRoll = NO;
+    
     if ([self.sourceXDPath isEqual:self.activeXDPath]) {
         if ([self.delegate respondsToSelector:@selector(desktopView:moveItemAtIndexPath:toIndexPath:)]) {
             [self.delegate desktopView:self moveItemAtIndexPath:self.sourceXDPath toIndexPath:self.activeXDPath];
@@ -370,15 +385,16 @@ int const DOCKSECTION = 10000;
 
 - (void)dragToDeskView
 {
-    //dockView 拖拽到deskView
+    //dockView to deskView
     NSIndexPath *insertPath;
     
     for (XDDesktopCell *cell in self.xdDeskView.subviews)
     {
-        CGRect realFrame = [self.activeView convertRect:cell.frame toView:self];
+        CGRect realFrame = [self.xdDeskView convertRect:cell.frame toView:self];
         if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
         {
             insertPath = cell.indexPath;
+            break;
         }
     }
     
@@ -408,19 +424,86 @@ int const DOCKSECTION = 10000;
 
 - (void)moveInSameView
 {
-    //判断是否在空白位置
-    if ([self snapViewInSpace] && self.activeView == self.xdDeskView) {
-        
+    //Determine if it is in a blank space
+    if ([self snapViewInSpace] && self.activeView == self.xdDeskView)
+    {
         NSInteger currentPage = [self getCurrentPage];
         
-        NSInteger num = [self.xdDeskView numberOfItemsInSection:currentPage];
-        
-        NSIndexPath *lastIndex = [NSIndexPath indexPathForRow:num - 1 inSection:currentPage];
-        
-        [self handleCellExchangeWithSourceIndexPath:self.activeXDPath destinationIndexPath:lastIndex];
-        
-        self.activeXDPath = lastIndex;
-    }else
+        if (currentPage == self.activeXDPath.section)
+        {
+            NSInteger num = [self.xdDeskView numberOfItemsInSection:currentPage];
+            
+            NSIndexPath *lastIndex = [NSIndexPath indexPathForRow:num - 1 inSection:currentPage];
+            
+            [self handleCellExchangeWithSourceIndexPath:self.activeXDPath destinationIndexPath:lastIndex];
+            
+            self.activeXDPath = lastIndex;
+        }
+        else
+        {
+            NSIndexPath *insertPath;
+            
+            for (XDDesktopCell *cell in self.xdDeskView.subviews)
+            {
+                CGRect realFrame = [self.activeView convertRect:cell.frame toView:self];
+                if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
+                {
+                    insertPath = cell.indexPath;
+                    break;
+                }
+            }
+            
+            NSInteger num = [self.xdDeskView numberOfItemsInSection:currentPage];
+            
+            if (insertPath)
+            {
+                [self.xdDeskView insertItem:self.activeCell atIndexPath:insertPath];
+                self.activeXDPath = insertPath;
+            }else
+            {
+                if (num < self.columns * self.rows)
+                {
+                    if (!insertPath){
+                        insertPath = [NSIndexPath indexPathForRow:num inSection:currentPage];
+                    }
+                    
+                    [self.xdDeskView insertItem:self.activeCell atIndexPath:insertPath];
+                    self.activeXDPath = insertPath;
+                }
+            }
+        }
+    
+        if (self.canRoll)
+        {
+            NSInteger increment = 0;
+            //turn to left
+            if (CGRectGetMidX(self.snapViewForActiveCell.frame) < CHANGEMARGIN ){
+                //current page is the first ,deskview can not turn to left
+                if (currentPage > 0) {
+                    increment = -1;
+                }
+            }
+            
+            //turn to right
+            if (CGRectGetMidX(self.snapViewForActiveCell.frame) > CGRectGetWidth(self.frame) - CHANGEMARGIN){
+                //current page is the last ,deskview can not turn to right
+                if (currentPage < self.xdDeskView.pageCount-1) {
+                    increment = 1;
+                }
+            }
+            
+            if (increment != 0) {
+                self.canRoll = NO;
+                [self setPage:currentPage + increment animate:YES];
+                
+                //interval of change page
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    self.canRoll = YES;
+                });
+            }
+        }
+    }
+    else
     {
         for (XDDesktopCell *cell in self.activeView.subviews)
         {
@@ -496,7 +579,7 @@ int const DOCKSECTION = 10000;
         
         CGRect realFrame = [self.xdDeskView convertRect:cell.frame toView:self];
         
-        CGRect activeFrame = CGRectMake(0, 0, self.xdDeskView.frame.size.width, CGRectGetMaxY(realFrame));
+        CGRect activeFrame = CGRectMake(CHANGEMARGIN, 0, self.xdDeskView.frame.size.width-2*CHANGEMARGIN, CGRectGetMaxY(realFrame));
         
         return !CGRectContainsPoint(activeFrame, self.snapViewForActiveCell.center);
     }else
@@ -507,7 +590,7 @@ int const DOCKSECTION = 10000;
         
         CGRect realFrame = [self.xdDeskView convertRect:cell.frame toView:self];
         
-        CGRect activeFrame = CGRectMake(0, 0, CGRectGetMaxX(realFrame), CGRectGetMaxY(realFrame));
+        CGRect activeFrame = CGRectMake(CHANGEMARGIN, 0, CGRectGetMaxX(realFrame), CGRectGetMaxY(realFrame));
         
         BOOL contain1 = CGRectContainsPoint(activeFrame, self.snapViewForActiveCell.center);
         
@@ -517,7 +600,7 @@ int const DOCKSECTION = 10000;
         
         realFrame = [self.xdDeskView convertRect:cell.frame toView:self];
         
-        activeFrame = CGRectMake(0, 0, self.xdDeskView.frame.size.width, CGRectGetMaxY(realFrame));
+        activeFrame = CGRectMake(CHANGEMARGIN, 0, self.xdDeskView.frame.size.width - 2*CHANGEMARGIN, CGRectGetMaxY(realFrame));
         
         BOOL contain2 = CGRectContainsPoint(activeFrame, self.snapViewForActiveCell.center);
         
@@ -541,7 +624,7 @@ int const DOCKSECTION = 10000;
         _xdDeskView = [XDDeskView deskViewWithRows:self.rows columns:self.columns];
         _xdDeskView.deskDelegate = self;
         _xdDeskView.delegate = self;
-        [_xdDeskView setItemSize:CGSizeMake(80, 95) edgeInsets:UIEdgeInsetsMake(20, 40, 5, 40)];
+        [_xdDeskView setItemSize:CGSizeMake(80, 95) edgeInsets:UIEdgeInsetsMake(20, 40, 45, 40)];
         _xdDeskView.translatesAutoresizingMaskIntoConstraints = NO;
         _xdDeskView.backgroundColor = [UIColor blueColor];
     }

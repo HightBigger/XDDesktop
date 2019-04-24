@@ -15,8 +15,6 @@
 @property (nonatomic) NSInteger rows;
 // 列数
 @property (nonatomic) NSInteger columns;
-// 页数
-@property (nonatomic) NSInteger pageCount;
 //xditem size
 @property (nonatomic) CGSize xditemSize;
 // 每页内边距
@@ -55,6 +53,15 @@
 {
     self.xditemSize = itemSize;
     self.edgeInsets = edgeInsets;
+}
+
+- (void)editMode:(BOOL)edit
+{
+    CGFloat pageWidth = self.frame.size.width;
+    
+    self.pageCount = edit ? self.pageCount + 1 : self.pageCount;
+    
+    self.contentSize = CGSizeMake(pageWidth * self.pageCount, self.frame.size.height);
 }
 
 - (void)reloadData

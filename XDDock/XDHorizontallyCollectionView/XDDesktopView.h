@@ -69,6 +69,12 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)desktopView:(XDDesktopView *)desktopView moveItemAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath*)destinationIndexPath;
 
+/**
+ Methods for notification of deleting events.
+
+ @param desktopView desktopView
+ @param sourceIndexPath indexPath of this item
+ */
 - (void)desktopView:(XDDesktopView *)desktopView deleteItemAtIndexPath:(NSIndexPath *)sourceIndexPath;
 
 @end;
@@ -79,11 +85,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 //the max number of elements the dockView may contain,default 4.
 @property (nonatomic, assign) NSInteger dockMax;
+
 /**
  desktopView 初始化方法
 
- @param rows deskview行数
- @param columns deskview列数
+ @param rows rows of deskview
+ @param columns columns of deskview
  @param cellClass cellClass
  @param identifier identifier
  @return XDDesktopView

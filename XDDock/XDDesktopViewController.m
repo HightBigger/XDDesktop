@@ -55,7 +55,7 @@
 {
     [super viewWillAppear:animated];
     
-    [self.xdcollectionView editingMode:YES];
+    
 
 }
 
@@ -66,6 +66,8 @@
     [self.xdcollectionView reloadData];
     
     [self.xdcollectionView setPage:0 animate:NO];
+    
+    [self.xdcollectionView editingMode:YES];
 }
 
 - (void)setupView

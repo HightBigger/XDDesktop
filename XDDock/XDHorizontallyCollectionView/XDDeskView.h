@@ -57,11 +57,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, weak) id <XDDeskViewDelegate> deskDelegate;
 
+// 页数
+@property (nonatomic,assign) NSInteger pageCount;
+
+
 + (instancetype)deskViewWithRows:(NSInteger)rows
                          columns:(NSInteger)columns;
 
 - (void)setItemSize:(CGSize)itemSize
          edgeInsets:(UIEdgeInsets)edgeInsets;
+
+- (void)editMode:(BOOL)edit;
 
 - (void)reloadData;
 
