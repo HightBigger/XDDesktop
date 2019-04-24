@@ -439,39 +439,6 @@ int const CHANGEMARGIN = 30;
             
             self.activeXDPath = lastIndex;
         }
-        else
-        {
-            NSIndexPath *insertPath;
-            
-            for (XDDesktopCell *cell in self.xdDeskView.subviews)
-            {
-                CGRect realFrame = [self.activeView convertRect:cell.frame toView:self];
-                if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
-                {
-                    insertPath = cell.indexPath;
-                    break;
-                }
-            }
-            
-            NSInteger num = [self.xdDeskView numberOfItemsInSection:currentPage];
-            
-            if (insertPath)
-            {
-                [self.xdDeskView insertItem:self.activeCell atIndexPath:insertPath];
-                self.activeXDPath = insertPath;
-            }else
-            {
-                if (num < self.columns * self.rows)
-                {
-                    if (!insertPath){
-                        insertPath = [NSIndexPath indexPathForRow:num inSection:currentPage];
-                    }
-                    
-                    [self.xdDeskView insertItem:self.activeCell atIndexPath:insertPath];
-                    self.activeXDPath = insertPath;
-                }
-            }
-        }
     
         if (self.canRoll)
         {
@@ -505,19 +472,58 @@ int const CHANGEMARGIN = 30;
     }
     else
     {
-        for (XDDesktopCell *cell in self.activeView.subviews)
+        NSInteger currentPage = [self getCurrentPage];
+        
+        if (currentPage == self.activeXDPath.section)
         {
-            NSIndexPath *currentIndexPath = cell.indexPath;
-            
-            if ([currentIndexPath isEqual:self.activeXDPath]) continue;
-            
-            CGRect realFrame = [self.activeView convertRect:cell.frame toView:self];
-            
-            if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
+            for (XDDesktopCell *cell in self.activeView.subviews)
             {
-                [self handleCellExchangeWithSourceIndexPath:self.activeXDPath destinationIndexPath:currentIndexPath];
-                self.activeXDPath = currentIndexPath;
-                break;
+                NSIndexPath *currentIndexPath = cell.indexPath;
+                
+                if ([currentIndexPath isEqual:self.activeXDPath]) continue;
+                
+                CGRect realFrame = [self.activeView convertRect:cell.frame toView:self];
+                
+                if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
+                {
+                    [self handleCellExchangeWithSourceIndexPath:self.activeXDPath destinationIndexPath:currentIndexPath];
+                    self.activeXDPath = currentIndexPath;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            NSIndexPath *insertPath;
+            
+            for (XDDesktopCell *cell in self.xdDeskView.subviews)
+            {
+                CGRect realFrame = [self.activeView convertRect:cell.frame toView:self];
+                if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
+                {
+                    insertPath = cell.indexPath;
+                    break;
+                }
+            }
+            
+            NSInteger num = [self.xdDeskView numberOfItemsInSection:currentPage];
+            
+            if (insertPath)
+            {
+                [self.xdDeskView insertItem:self.activeCell atIndexPath:insertPath];
+                self.activeXDPath = insertPath;
+            }else
+            {
+                if (num < self.columns * self.rows)
+                {
+                    if (!insertPath)
+                    {
+                        insertPath = [NSIndexPath indexPathForRow:num inSection:currentPage];
+                    }
+                    
+                    [self.xdDeskView insertItem:self.activeCell atIndexPath:insertPath];
+                    self.activeXDPath = insertPath;
+                }
             }
         }
     }
