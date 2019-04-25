@@ -31,7 +31,7 @@
     self.deskArray1 = [NSMutableArray arrayWithCapacity:0];
     self.deskArray2 = [NSMutableArray arrayWithCapacity:0];
     
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 2; i++) {
         [self.dockArray addObject:[NSNumber numberWithInt:i]];
     }
     

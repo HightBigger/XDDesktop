@@ -46,6 +46,8 @@ int const CHANGEMARGIN = 30;
 @property (nonatomic, strong) NSIndexPath *activeXDPath;
 @property (nonatomic, strong) NSIndexPath *sourceXDPath;
 
+@property (nonatomic, assign) CGPoint lastPoint;
+
 @end
 
 
@@ -234,6 +236,8 @@ int const CHANGEMARGIN = 30;
     
     CGPoint pressPoint = [recognizer locationInView:self];
     
+    self.lastPoint = pressPoint;
+    
     if (CGRectContainsPoint(self.xdDeskView.frame, pressPoint)) {
         self.sourceView = self.xdDeskView;
         self.activeView = self.xdDeskView;
@@ -259,7 +263,12 @@ int const CHANGEMARGIN = 30;
     CGPoint pressPoint = [recognizer locationInView:self];
 
     self.snapViewForActiveCell.center = CGPointMake(pressPoint.x - _centerOffset.x, pressPoint.y - _centerOffset.y);
-
+    
+    //移动速度，后面再看是否需要判断该参数
+//    double speed = [self fingerMoveSpeadWithPoint:pressPoint];
+//    self.lastPoint = pressPoint;
+//    if (speed >= 5) return;
+    
     if (CGRectContainsPoint(self.xdDeskView.frame, pressPoint))
     {
         self.activeView = self.xdDeskView;
@@ -474,25 +483,7 @@ int const CHANGEMARGIN = 30;
     {
         NSInteger currentPage = [self getCurrentPage];
         
-        if (currentPage == self.activeXDPath.section)
-        {
-            for (XDDesktopCell *cell in self.activeView.subviews)
-            {
-                NSIndexPath *currentIndexPath = cell.indexPath;
-                
-                if ([currentIndexPath isEqual:self.activeXDPath]) continue;
-                
-                CGRect realFrame = [self.activeView convertRect:cell.frame toView:self];
-                
-                if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
-                {
-                    [self handleCellExchangeWithSourceIndexPath:self.activeXDPath destinationIndexPath:currentIndexPath];
-                    self.activeXDPath = currentIndexPath;
-                    break;
-                }
-            }
-        }
-        else
+        if (self.activeView == self.xdDeskView && currentPage != self.activeXDPath.section)
         {
             NSIndexPath *insertPath;
             
@@ -523,6 +514,24 @@ int const CHANGEMARGIN = 30;
                     
                     [self.xdDeskView insertItem:self.activeCell atIndexPath:insertPath];
                     self.activeXDPath = insertPath;
+                }
+            }
+        }
+        else
+        {
+            for (XDDesktopCell *cell in self.activeView.subviews)
+            {
+                NSIndexPath *currentIndexPath = cell.indexPath;
+                
+                if ([currentIndexPath isEqual:self.activeXDPath]) continue;
+                
+                CGRect realFrame = [self.activeView convertRect:cell.frame toView:self];
+                
+                if (CGRectContainsPoint(realFrame, self.snapViewForActiveCell.center))
+                {
+                    [self handleCellExchangeWithSourceIndexPath:self.activeXDPath destinationIndexPath:currentIndexPath];
+                    
+                    self.activeXDPath = currentIndexPath;
                 }
             }
         }
@@ -615,12 +624,23 @@ int const CHANGEMARGIN = 30;
 }
 
 
-//从0开始
+//get the current page
 - (NSInteger)getCurrentPage
 {
     NSInteger page = self.xdDeskView.contentOffset.x/self.xdDeskView.bounds.size.width;
     
     return page;
+}
+
+//sliding speed
+- (double)fingerMoveSpeadWithPoint:(CGPoint)nowPoint
+{
+    CGPoint prePoint = self.lastPoint;
+    CGFloat deltaX = prePoint.x - nowPoint.x;
+    CGFloat x = deltaX * deltaX;
+    CGFloat deltaY = prePoint.y - nowPoint.y;
+    CGFloat y = deltaY * deltaY;
+    return sqrt(x+y);
 }
 
 #pragma mark - lazyLoad
