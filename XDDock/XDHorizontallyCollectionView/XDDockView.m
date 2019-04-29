@@ -32,13 +32,13 @@
     if (self) {
         self.maxCount = maxCount;
         
-        UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
-        [self addGestureRecognizer:longPress];
+        UIPanGestureRecognizer *panPress = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panPress:)];
+        [self addGestureRecognizer:panPress];
     }
     return self;
 }
 
-- (void)longPress:(UILongPressGestureRecognizer*)longPress
+- (void)panPress:(UILongPressGestureRecognizer*)longPress
 {
     return;
 }
